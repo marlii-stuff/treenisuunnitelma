@@ -99,6 +99,7 @@ Testit kattavat:
 - tietokanta-avauksen virhetilanteet
 - SQLite-repositorion CRUD + history -kayttaytyminen
 - frontendin paivamaarautilit (`dateUtils`)
+- frontend-komponentit React Testing Librarylla (`WeekNavigator`, `WeekGrid`, `WorkoutModal`, `HistoryPanel`)
 
 Yksityiskohtainen testimatriksi: `TESTING.md`
 

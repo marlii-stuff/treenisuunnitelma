@@ -1,6 +1,8 @@
 ﻿# Testing Standards and Coverage
 
-This project uses Node's built-in test runner (`node:test`) for backend unit tests.
+This project uses:
+- Node's built-in test runner (`node:test`) for backend unit tests
+- Vitest + React Testing Library for frontend unit tests
 
 ## Standards
 - Deterministic tests: no reliance on external network/filesystem state
@@ -47,16 +49,52 @@ Covers SQLite repository behavior with in-memory DB:
 - Missing row handling (update/delete)
 - History limit behavior and payload deserialization
 
+### `frontend/tests/WeekNavigator.test.jsx`
+Covers:
+- range label rendering
+- previous/current/next week button callbacks
+
+### `frontend/tests/WeekGrid.test.jsx`
+Covers:
+- day and workout rendering
+- Unicode workout names (Chinese + Arabic)
+- very long note rendering
+- add/edit/delete callback wiring
+
+### `frontend/tests/WorkoutModal.test.jsx`
+Covers:
+- hidden state when modal is closed
+- editing and submitting form values
+- numeric coercion for duration input
+- Unicode form input values
+
+### `frontend/tests/HistoryPanel.test.jsx`
+Covers:
+- history action rendering
+- payload name rendering
+- deleted-item fallback label
+
+### `frontend/tests/dateUtils.test.js`
+Covers:
+- ISO date formatting
+- Monday week-start normalization
+- seven-day week generation
+- date-range rendering format
+
 ## Running Tests
 
 ```bash
-npm run test -w backend
+npm run test
 ```
 
-The backend test script uses:
+Backend script uses:
 
 ```bash
 node --test --test-isolation=none
 ```
 
-This avoids process-spawn isolation issues in restricted environments while preserving unit-test determinism.
+Frontend script uses:
+
+```bash
+vitest run
+```
