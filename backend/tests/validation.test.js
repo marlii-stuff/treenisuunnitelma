@@ -2,12 +2,20 @@
 import assert from "node:assert/strict";
 import { normalizeWorkoutInput, validateWorkoutInput } from "../src/validation.js";
 
-test("valid workout supports Chinese and Arabic text", () => {
-  const input = normalizeWorkoutInput({
+function validBase(overrides = {}) {
+  return normalizeWorkoutInput({
     date: "2026-03-09",
-    name: "跑步 تدريب",
+    name: "Easy Run",
     durationMinutes: 45,
     paceTarget: "5:30/km",
+    notes: "Base notes",
+    ...overrides
+  });
+}
+
+test("accepts multilingual names and notes (Chinese + Arabic)", () => {
+  const input = validBase({
+    name: "跑步 تدريب",
     notes: "今天状态不错 | اليوم كان جيداً"
   });
 
@@ -16,79 +24,64 @@ test("valid workout supports Chinese and Arabic text", () => {
   assert.deepEqual(result.errors, []);
 });
 
-test("rejects decimal duration", () => {
-  const input = normalizeWorkoutInput({
-    date: "2026-03-09",
-    name: "Tempo",
-    durationMinutes: 12.5,
-    paceTarget: "4:50/km",
-    notes: "decimal should fail"
+test("accepts boundary lengths and rejects too long name/pace/notes", () => {
+  const maxName = "N".repeat(120);
+  const tooLongName = "N".repeat(121);
+  const maxPace = "P".repeat(60);
+  const tooLongPace = "P".repeat(61);
+  const maxNotes = "x".repeat(3000);
+  const tooLongNotes = "x".repeat(3001);
+
+  assert.equal(validateWorkoutInput(validBase({ name: maxName })).isValid, true);
+  assert.equal(validateWorkoutInput(validBase({ paceTarget: maxPace })).isValid, true);
+  assert.equal(validateWorkoutInput(validBase({ notes: maxNotes })).isValid, true);
+
+  assert.equal(validateWorkoutInput(validBase({ name: tooLongName })).isValid, false);
+  assert.equal(validateWorkoutInput(validBase({ paceTarget: tooLongPace })).isValid, false);
+  assert.equal(validateWorkoutInput(validBase({ notes: tooLongNotes })).isValid, false);
+});
+
+test("rejects decimal, NaN, Infinity and negative infinity durations", () => {
+  const decimal = validateWorkoutInput(validBase({ durationMinutes: 12.5 }));
+  const nanValue = validateWorkoutInput(validBase({ durationMinutes: Number.NaN }));
+  const inf = validateWorkoutInput(validBase({ durationMinutes: Number.POSITIVE_INFINITY }));
+  const negInf = validateWorkoutInput(validBase({ durationMinutes: Number.NEGATIVE_INFINITY }));
+
+  assert.equal(decimal.isValid, false);
+  assert.equal(nanValue.isValid, false);
+  assert.equal(inf.isValid, false);
+  assert.equal(negInf.isValid, false);
+});
+
+test("rejects invalid date formats and accepts ISO date", () => {
+  assert.equal(validateWorkoutInput(validBase({ date: "2026-12-31" })).isValid, true);
+  assert.equal(validateWorkoutInput(validBase({ date: "31-12-2026" })).isValid, false);
+  assert.equal(validateWorkoutInput(validBase({ date: "2026/12/31" })).isValid, false);
+  assert.equal(validateWorkoutInput(validBase({ date: "" })).isValid, false);
+});
+
+test("rejects zero and negative duration and accepts min/max valid integer durations", () => {
+  assert.equal(validateWorkoutInput(validBase({ durationMinutes: 1 })).isValid, true);
+  assert.equal(validateWorkoutInput(validBase({ durationMinutes: 1440 })).isValid, true);
+  assert.equal(validateWorkoutInput(validBase({ durationMinutes: 0 })).isValid, false);
+  assert.equal(validateWorkoutInput(validBase({ durationMinutes: -10 })).isValid, false);
+  assert.equal(validateWorkoutInput(validBase({ durationMinutes: 1441 })).isValid, false);
+});
+
+test("normalization trims strings and coerces numeric input", () => {
+  const normalized = normalizeWorkoutInput({
+    date: "2026-03-10",
+    name: "  Interval  ",
+    durationMinutes: "60",
+    paceTarget: " 4:30/km ",
+    notes: "  strong session  "
   });
 
-  const result = validateWorkoutInput(input);
-  assert.equal(result.isValid, false);
-  assert.match(result.errors.join(" "), /durationMinutes/);
-});
-
-test("rejects negative and zero durations", () => {
-  const negative = validateWorkoutInput(
-    normalizeWorkoutInput({
-      date: "2026-03-10",
-      name: "Negative",
-      durationMinutes: -10,
-      paceTarget: "easy",
-      notes: ""
-    })
-  );
-  const zero = validateWorkoutInput(
-    normalizeWorkoutInput({
-      date: "2026-03-10",
-      name: "Zero",
-      durationMinutes: 0,
-      paceTarget: "easy",
-      notes: ""
-    })
-  );
-
-  assert.equal(negative.isValid, false);
-  assert.equal(zero.isValid, false);
-});
-
-test("accepts very small and very large valid integer durations", () => {
-  const small = validateWorkoutInput(
-    normalizeWorkoutInput({
-      date: "2026-03-11",
-      name: "Small",
-      durationMinutes: 1,
-      paceTarget: "walk",
-      notes: ""
-    })
-  );
-
-  const large = validateWorkoutInput(
-    normalizeWorkoutInput({
-      date: "2026-03-11",
-      name: "Large",
-      durationMinutes: 1440,
-      paceTarget: "ultra",
-      notes: ""
-    })
-  );
-
-  assert.equal(small.isValid, true);
-  assert.equal(large.isValid, true);
-});
-
-test("rejects too large duration", () => {
-  const result = validateWorkoutInput(
-    normalizeWorkoutInput({
-      date: "2026-03-12",
-      name: "Too long",
-      durationMinutes: 1441,
-      paceTarget: "slow",
-      notes: ""
-    })
-  );
-
-  assert.equal(result.isValid, false);
+  assert.deepEqual(normalized, {
+    date: "2026-03-10",
+    name: "Interval",
+    durationMinutes: 60,
+    paceTarget: "4:30/km",
+    notes: "strong session"
+  });
 });

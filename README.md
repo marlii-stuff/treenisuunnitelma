@@ -90,15 +90,19 @@ Backend: `http://localhost:4000`
 Frontend: `http://localhost:5173`
 
 ## Tests
-Backend-testit kattavat:
+Testit kattavat:
 - Unicode-tekstit (kiina + arabia)
-- hyvin pienet/suuret, positiiviset/negatiiviset arvot
-- desimaalit
-- tiedosto-operaatioiden virhetilanteet (virheellinen polku, oikeudet, rikkoutunut data, levytila)
-- verkkoyhteysvirheet
+- hyvin pitkien syotteiden raja-arvot
+- desimaalit, `NaN`, `Infinity`, `-Infinity`
+- tiedosto-operaatioiden virhetilanteet (virheellinen polku, oikeudet, rikkoutunut data, levytila, tuntemattomat virheet)
+- verkkoyhteysvirheet ja HTTP-virheet
 - tietokanta-avauksen virhetilanteet
+- SQLite-repositorion CRUD + history -kayttaytyminen
+- frontendin paivamaarautilit (`dateUtils`)
+
+Yksityiskohtainen testimatriksi: `TESTING.md`
 
 Aja testit:
 ```bash
-npm run test -w backend
+npm run test
 ```
